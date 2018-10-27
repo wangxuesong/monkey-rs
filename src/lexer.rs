@@ -16,6 +16,7 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
         match self.read_char() {
             Some('=') => Token::Assign,
             Some('+') => Token::Plus,
@@ -25,14 +26,65 @@ impl<'a> Lexer<'a> {
             Some('}') => Token::Rbrace,
             Some(',') => Token::Comma,
             Some(';') => Token::Semicolon,
-            Some(_) => Token::EOF,
+            Some(ch) => {
+                if is_letter(ch) {
+                    let ident = self.read_identifier(ch);
+                    let tok = token::lookup_ident(ident);
+                    tok
+                } else if ch.is_digit(10) {
+                    Token::Int(self.read_number(ch))
+                } else { Token::Illegal }
+            }
             None => Token::EOF,
+        }
+    }
+
+    fn skip_whitespace(&mut self) {
+        while let Some(&ch) = self.input.peek() {
+            if ch.is_whitespace() {
+                self.read_char();
+            } else {
+                break;
+            }
         }
     }
 
     fn read_char(&mut self) -> Option<char> {
         self.input.next()
     }
+
+    fn read_identifier(&mut self, ch: char) -> String {
+        let mut ident = String::new();
+        ident.push(ch);
+
+        while let Some(&ch) = self.input.peek() {
+            if is_letter(ch) {
+                ident.push(self.read_char().unwrap())
+            } else {
+                break;
+            }
+        };
+
+        ident
+    }
+
+    fn read_number(&mut self, ch: char) -> i64 {
+        let mut number = String::new();
+        number.push(ch);
+
+        while let Some(&ch) = self.input.peek() {
+            if ch.is_digit(10) {
+                number.push(self.read_char().unwrap())
+            } else {
+                break;
+            }
+        }
+        number.parse().unwrap()
+    }
+}
+
+fn is_letter(ch: char) -> bool {
+    ch.is_alphabetic() || ch == '_'
 }
 
 #[cfg(test)]
@@ -42,16 +94,13 @@ mod tests {
 
     #[test]
     fn test_next_token() {
-        let input = r#"=+(){},;"#;
+        let input = r#"let five = 5;"#;
 
         let tests = vec![
+            Token::Let,
+            Token::Ident("five".to_string()),
             Token::Assign,
-            Token::Plus,
-            Token::Lparen,
-            Token::Rparen,
-            Token::Lbrace,
-            Token::Rbrace,
-            Token::Comma,
+            Token::Int(5),
             Token::Semicolon,
             Token::EOF,
         ];

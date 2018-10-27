@@ -23,3 +23,10 @@ pub enum Token {
     Function,
     Let,
 }
+
+pub fn lookup_ident(ident: String) -> Token {
+    match ident.as_str() {
+        "let" => Token::Let,
+        _ => Token::Ident(ident),
+    }
+}
