@@ -16,7 +16,22 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next_token(&mut self) -> Token {
-        Token::Assign
+        match self.read_char() {
+            Some('=') => Token::Assign,
+            Some('+') => Token::Plus,
+            Some('(') => Token::Lparen,
+            Some(')') => Token::Rparen,
+            Some('{') => Token::Lbrace,
+            Some('}') => Token::Rbrace,
+            Some(',') => Token::Comma,
+            Some(';') => Token::Semicolon,
+            Some(_) => Token::EOF,
+            None => Token::EOF,
+        }
+    }
+
+    fn read_char(&mut self) -> Option<char> {
+        self.input.next()
     }
 }
 
@@ -31,6 +46,14 @@ mod tests {
 
         let tests = vec![
             Token::Assign,
+            Token::Plus,
+            Token::Lparen,
+            Token::Rparen,
+            Token::Lbrace,
+            Token::Rbrace,
+            Token::Comma,
+            Token::Semicolon,
+            Token::EOF,
         ];
 
         let mut l = Lexer::new(input);

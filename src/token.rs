@@ -12,6 +12,8 @@ pub enum Token {
     Plus,
 
     // 分隔符
+    Comma,
+    Semicolon,
     Lparen,
     Rparen,
     Lbrace,
