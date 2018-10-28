@@ -1,4 +1,6 @@
-#[derive(Eq, PartialEq, Debug)]
+use std::fmt;
+
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub enum Token {
     Illegal,
     EOF,
@@ -22,6 +24,15 @@ pub enum Token {
     // 关键字
     Function,
     Let,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            Token::Int(value) => write!(f, "{}", value),
+            tok => write!(f, "{:?}", tok),
+        }
+    }
 }
 
 pub fn lookup_ident(ident: String) -> Token {
