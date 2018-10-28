@@ -4,7 +4,7 @@ use token;
 use token::Token;
 
 #[derive(Debug)]
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }
 
@@ -80,6 +80,19 @@ impl<'a> Lexer<'a> {
             }
         }
         number.parse().unwrap()
+    }
+}
+
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        let tok = self.next_token();
+        if tok == Token::EOF {
+            None
+        } else {
+            Some(tok)
+        }
     }
 }
 
