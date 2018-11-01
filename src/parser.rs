@@ -14,6 +14,14 @@ pub struct Parser<'a> {
     peek_token: Token,
 }
 
+pub fn parse(input: &str) -> Result<Node, ParseError> {
+    let mut lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let prog = parser.parse_program()?;
+
+    Ok(Node::Program(Box::new(prog)))
+}
+
 impl<'a> Parser<'a> {
     pub fn new(l: Lexer) -> Parser {
         let mut l = l;
@@ -66,25 +74,17 @@ impl<'a> Parser<'a> {
 
         self.expect_token(Token::Semicolon);
 
-        Ok(Statement::Let(Box::new(
-            LetStatement {
-                name,
-                value,
-            }))
-        )
+        Ok(Statement::Let(Box::new(LetStatement { name, value })))
     }
-
 
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
         let expr = self.parse_expression()?;
 
         self.expect_token(Token::Semicolon);
 
-        Ok(Statement::Expression(Box::new(
-            ExpressionStatement {
-                expression: expr
-            }))
-        )
+        Ok(Statement::Expression(Box::new(ExpressionStatement {
+            expression: expr,
+        })))
     }
 
     fn parse_expression(&mut self) -> ParseResult<Expression> {
@@ -98,12 +98,12 @@ impl<'a> Parser<'a> {
 
         while self.cur_token != Token::Semicolon {
             self.next_token();
-        };
+        }
         Ok(left)
     }
 
     fn parse_integer_literal(parser: &mut Parser) -> ParseResult<Expression> {
-//        self.next_token();
+        //        self.next_token();
         if let Token::Int(value) = parser.cur_token {
             return Ok(Expression::Integer(value));
         };
@@ -137,9 +137,7 @@ mod tests {
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
 
-        let expects = vec![
-            ("birthday", Expression::Integer(1103)),
-        ];
+        let expects = vec![("birthday", Expression::Integer(1103))];
 
         let program = p.parse_program().unwrap();
         let mut iter = program.statements.iter();
@@ -161,15 +159,11 @@ mod tests {
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
 
-        let expects = vec![
-            ("birthday", Expression::Integer(1103)),
-        ];
+        let expects = vec![("birthday", Expression::Integer(1103))];
 
         match p.parse_program() {
             Ok(_) => panic!("error"),
-            Err(err) => {
-                assert_eq!("invalid token Semicolon", err)
-            }
+            Err(err) => assert_eq!("invalid token Semicolon", err),
         }
     }
 
@@ -182,7 +176,7 @@ mod tests {
     fn parse_expression_statement() {
         let expects = vec![
             ("1103;", Expression::Integer(1103)),
-//            ("-1103", Expression::Prefix()),
+            //            ("-1103", Expression::Prefix()),
         ];
 
         for e in expects {

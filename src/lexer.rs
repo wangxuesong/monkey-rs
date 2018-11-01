@@ -34,7 +34,9 @@ impl<'a> Lexer<'a> {
                     tok
                 } else if ch.is_digit(10) {
                     Token::Int(self.read_number(ch))
-                } else { Token::Illegal }
+                } else {
+                    Token::Illegal
+                }
             }
             None => Token::EOF,
         }
@@ -64,7 +66,7 @@ impl<'a> Lexer<'a> {
             } else {
                 break;
             }
-        };
+        }
 
         ident
     }

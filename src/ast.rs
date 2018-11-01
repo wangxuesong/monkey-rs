@@ -29,7 +29,9 @@ pub struct Program {
 
 impl Program {
     pub fn new() -> Program {
-        Program { statements: Vec::new() }
+        Program {
+            statements: Vec::new(),
+        }
     }
 }
 
