@@ -20,6 +20,7 @@ impl<'a> Lexer<'a> {
         match self.read_char() {
             Some('=') => Token::Assign,
             Some('+') => Token::Plus,
+            Some('-') => Token::Minus,
             Some('(') => Token::Lparen,
             Some(')') => Token::Rparen,
             Some('{') => Token::Lbrace,

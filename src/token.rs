@@ -12,6 +12,7 @@ pub enum Token {
     // 操作符
     Assign,
     Plus,
+    Minus,
 
     // 分隔符
     Comma,

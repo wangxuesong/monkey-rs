@@ -4,6 +4,8 @@ use token::Token;
 
 type ParseError = String;
 pub type ParseResult<T> = Result<T, ParseError>;
+type PrefixFunc = fn(parser: &mut Parser) -> ParseResult<Expression>;
+type InfixFunc = fn(parser: &mut Parser, left: Expression) -> ParseResult<Expression>;
 
 pub struct Parser<'a> {
     l: Lexer<'a>,
@@ -24,6 +26,18 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn next_token(&mut self) {
+        self.cur_token = self.peek_token.clone();
+        self.peek_token = self.l.next_token();
+    }
+
+    fn prefix_fn(&mut self) -> Option<PrefixFunc> {
+        match self.cur_token {
+            Token::Int(_) => Some(Parser::parse_integer_literal),
+            _ => None,
+        }
+    }
+
     pub fn parse_program(&mut self) -> ParseResult<Program> {
         let mut p = Program::new();
 
@@ -35,15 +49,10 @@ impl<'a> Parser<'a> {
         Ok(p)
     }
 
-    fn next_token(&mut self) {
-        self.cur_token = self.peek_token.clone();
-        self.peek_token = self.l.next_token();
-    }
-
     fn parse_statement(&mut self) -> ParseResult<Statement> {
         match self.cur_token {
             Token::Let => self.parse_let_statement(),
-            _ => unimplemented!("{:?}", self.cur_token)
+            _ => self.parse_expression_statement(),
         }
     }
 
@@ -52,7 +61,8 @@ impl<'a> Parser<'a> {
 
         self.expect_token(Token::Assign);
 
-        let value = self.parse_integer_literal()?;
+        self.next_token();
+        let value = self.parse_expression()?;
 
         self.expect_token(Token::Semicolon);
 
@@ -64,12 +74,40 @@ impl<'a> Parser<'a> {
         )
     }
 
-    fn parse_integer_literal(&mut self) -> ParseResult<Expression> {
-        self.next_token();
-        if let Token::Int(value) = self.cur_token {
+
+    fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
+        let expr = self.parse_expression()?;
+
+        self.expect_token(Token::Semicolon);
+
+        Ok(Statement::Expression(Box::new(
+            ExpressionStatement {
+                expression: expr
+            }))
+        )
+    }
+
+    fn parse_expression(&mut self) -> ParseResult<Expression> {
+        let mut left;
+
+        if let Some(f) = self.prefix_fn() {
+            left = f(self)?
+        } else {
+            return Err(format!("invalid token {:?}", self.cur_token));
+        }
+
+        while self.cur_token != Token::Semicolon {
+            self.next_token();
+        };
+        Ok(left)
+    }
+
+    fn parse_integer_literal(parser: &mut Parser) -> ParseResult<Expression> {
+//        self.next_token();
+        if let Token::Int(value) = parser.cur_token {
             return Ok(Expression::Integer(value));
         };
-        Err(format!("invalid integer {}", self.cur_token))
+        Err(format!("invalid token {}", parser.cur_token))
     }
 
     fn expect_token(&mut self, tok: Token) {
@@ -112,6 +150,7 @@ mod tests {
                     assert_eq!(e.0, l.name);
                     assert_eq!(e.1, l.value);
                 }
+                stmt => panic!("expected let statement but got {:?}", stmt),
             }
         }
     }
@@ -129,7 +168,33 @@ mod tests {
         match p.parse_program() {
             Ok(_) => panic!("error"),
             Err(err) => {
-                assert_eq!("invalid integer Semicolon", err)
+                assert_eq!("invalid token Semicolon", err)
+            }
+        }
+    }
+
+    fn setup(input: &str) -> Parser {
+        let l = Lexer::new(input);
+        Parser::new(l)
+    }
+
+    #[test]
+    fn parse_expression_statement() {
+        let expects = vec![
+            ("1103;", Expression::Integer(1103)),
+//            ("-1103", Expression::Prefix()),
+        ];
+
+        for e in expects {
+            let mut p = setup(e.0);
+            let program = p.parse_program().unwrap();
+            let mut iter = program.statements.iter();
+
+            match iter.next().unwrap() {
+                Statement::Expression(ref l) => {
+                    assert_eq!(e.1, l.expression);
+                }
+                _ => panic!("expected let statement"),
             }
         }
     }

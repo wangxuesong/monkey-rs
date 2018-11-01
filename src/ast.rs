@@ -11,12 +11,15 @@ pub enum Node {
 #[derive(Debug, Clone)]
 pub enum Statement {
     Let(Box<LetStatement>),
+    Expression(Box<ExpressionStatement>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expression {
     Identifier(String),
     Integer(i64),
+    Prefix(),
+    Infix(Box<InfixExpression>),
 }
 
 #[derive(Debug)]
@@ -41,3 +44,19 @@ pub struct LetStatement {
     pub name: String,
     pub value: Expression,
 }
+
+#[derive(Debug, Clone)]
+pub struct ExpressionStatement {
+    pub expression: Expression,
+}
+
+impl fmt::Display for ExpressionStatement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        unimplemented!()
+    }
+}
+
+// Expression
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct InfixExpression {}
