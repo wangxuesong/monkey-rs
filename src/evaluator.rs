@@ -1,5 +1,6 @@
 use ast::*;
 use object::Object;
+use token::Token;
 
 pub type EvalResult = Result<Object, EvalError>;
 
@@ -37,10 +38,30 @@ fn eval_statement(stmt: &Statement) -> EvalResult {
 fn eval_expression(exp: &Expression) -> EvalResult {
     match exp {
         Expression::Integer(i) => Ok(Object::Int(*i)),
+        Expression::Prefix(expr) => {
+            let value = eval_expression(&expr.right);
+            match expr.operator {
+                Token::Minus => match value {
+                    Ok(Object::Int(i)) => Ok(Object::Int(-i)),
+                    _ => Err(EvalError {
+                        message: String::new(),
+                    }),
+                },
+                _ => Err(EvalError {
+                    message: "eval expression".to_string(),
+                }),
+            }
+        }
         _ => Err(EvalError {
             message: "eval expression".to_string(),
         }),
     }
+}
+
+fn eval_prefix_expression(exp: &Expression) -> EvalResult {
+    Err(EvalError {
+        message: "eval prefix expression".to_string(),
+    })
 }
 
 #[cfg(test)]
@@ -50,7 +71,7 @@ mod test {
 
     #[test]
     fn eval_integer_expression() {
-        let test = vec![("1103;", 1103)];
+        let test = vec![("1103;", 1103), ("-1103;", -1103)];
 
         for t in test {
             let obj = match parser::parse(t.0) {

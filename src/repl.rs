@@ -15,7 +15,7 @@ pub fn start<R: io::BufRead, W: io::Write>(mut r: R, mut w: W) -> io::Result<()>
             Err(e) => Err(evaluator::EvalError { message: e }),
         };
         match obj {
-            Ok(o) => println!("{:?}", o),
+            Ok(o) => println!("{:?}", o.inspect()),
             Err(e) => println!("{:?}", e),
         }
     }

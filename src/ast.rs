@@ -18,7 +18,7 @@ pub enum Statement {
 pub enum Expression {
     Identifier(String),
     Integer(i64),
-    Prefix(),
+    Prefix(Box<PrefixExpression>),
     Infix(Box<InfixExpression>),
 }
 
@@ -62,3 +62,9 @@ impl fmt::Display for ExpressionStatement {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct InfixExpression {}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct PrefixExpression {
+    pub operator: token::Token,
+    pub right: Expression,
+}

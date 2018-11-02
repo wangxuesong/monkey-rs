@@ -42,6 +42,7 @@ impl<'a> Parser<'a> {
     fn prefix_fn(&mut self) -> Option<PrefixFunc> {
         match self.cur_token {
             Token::Int(_) => Some(Parser::parse_integer_literal),
+            Token::Minus => Some(Parser::parse_prefix_expression),
             _ => None,
         }
     }
@@ -102,8 +103,17 @@ impl<'a> Parser<'a> {
         Ok(left)
     }
 
+    fn parse_prefix_expression(parser: &mut Parser) -> ParseResult<Expression> {
+        let operator = parser.cur_token.clone();
+        parser.next_token();
+        let right = parser.parse_expression()?;
+        Ok(Expression::Prefix(Box::new(PrefixExpression {
+            operator,
+            right,
+        })))
+    }
+
     fn parse_integer_literal(parser: &mut Parser) -> ParseResult<Expression> {
-        //        self.next_token();
         if let Token::Int(value) = parser.cur_token {
             return Ok(Expression::Integer(value));
         };
@@ -130,6 +140,7 @@ mod tests {
     use ast::*;
     use lexer::Lexer;
     use super::*;
+    use token;
 
     #[test]
     fn parse_let_statement() {
@@ -176,7 +187,13 @@ mod tests {
     fn parse_expression_statement() {
         let expects = vec![
             ("1103;", Expression::Integer(1103)),
-            //            ("-1103", Expression::Prefix()),
+            (
+                "-1103;",
+                Expression::Prefix(Box::new(PrefixExpression {
+                    operator: token::Token::Minus,
+                    right: Expression::Integer(1103),
+                })),
+            ),
         ];
 
         for e in expects {
