@@ -38,31 +38,16 @@ fn eval_statement(stmt: &Statement) -> EvalResult {
 fn eval_expression(exp: &Expression) -> EvalResult {
     match exp {
         Expression::Integer(i) => Ok(Object::Int(*i)),
-        Expression::Prefix(expr) => {
-            let value = eval_expression(&expr.right);
-            match expr.operator {
-                Token::Minus => match value {
-                    Ok(Object::Int(i)) => Ok(Object::Int(-i)),
-                    _ => Err(EvalError {
-                        message: String::new(),
-                    }),
-                },
-                _ => Err(EvalError {
-                    message: "eval prefix expression".to_string(),
-                }),
-            }
-        }
+        Expression::Prefix(expr) => eval_prefix_expression(expr),
         Expression::Infix(expr) => {
             let left = eval_expression(&expr.left)?;
             let right = eval_expression(&expr.right)?;
             match expr.operator {
-                Token::Minus => {
-                    match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l - r)),
-                        _ => Err(EvalError {
-                            message: "eval infix expression".to_string(),
-                        }),
-                    }
+                Token::Minus => match (left, right) {
+                    (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l - r)),
+                    _ => Err(EvalError {
+                        message: "eval infix expression".to_string(),
+                    }),
                 },
                 _ => Err(EvalError {
                     message: "eval infix expression".to_string(),
@@ -75,10 +60,19 @@ fn eval_expression(exp: &Expression) -> EvalResult {
     }
 }
 
-fn eval_prefix_expression(exp: &Expression) -> EvalResult {
-    Err(EvalError {
-        message: "eval prefix expression".to_string(),
-    })
+fn eval_prefix_expression(exp: &PrefixExpression) -> EvalResult {
+    let value = eval_expression(&exp.right);
+    match exp.operator {
+        Token::Minus => match value {
+            Ok(Object::Int(i)) => Ok(Object::Int(-i)),
+            _ => Err(EvalError {
+                message: "eval prefix expression".to_string(),
+            }),
+        },
+        _ => Err(EvalError {
+            message: "eval expression".to_string(),
+        }),
+    }
 }
 
 #[cfg(test)]

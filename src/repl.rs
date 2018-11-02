@@ -1,5 +1,4 @@
 use evaluator;
-use lexer;
 use parser;
 use std::io;
 

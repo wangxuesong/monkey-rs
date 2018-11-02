@@ -14,6 +14,13 @@ pub enum Statement {
     Expression(Box<ExpressionStatement>),
 }
 
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let s = format!("{}", self);
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expression {
     Identifier(String),
@@ -37,7 +44,11 @@ impl Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unimplemented!()
+        let stmts: Vec<String> = (*self.statements)
+            .into_iter()
+            .map(|stmt| stmt.to_string())
+            .collect();
+        write!(f, "{}", stmts.join(""))
     }
 }
 
@@ -54,7 +65,8 @@ pub struct ExpressionStatement {
 
 impl fmt::Display for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unimplemented!()
+        let s = format!("{}", self);
+        write!(f, "{}", s)
     }
 }
 

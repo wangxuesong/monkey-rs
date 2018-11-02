@@ -15,7 +15,7 @@ pub struct Parser<'a> {
 }
 
 pub fn parse(input: &str) -> Result<Node, ParseError> {
-    let mut lexer = Lexer::new(input);
+    let lexer = Lexer::new(input);
     let mut parser = Parser::new(lexer);
     let prog = parser.parse_program()?;
 
@@ -163,9 +163,8 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use ast::*;
     use lexer::Lexer;
-    use super::*;
+    use parser::*;
     use token;
 
     #[test]
@@ -195,8 +194,6 @@ mod tests {
         let input = r#"let birthday = ;"#;
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
-
-        let expects = vec![("birthday", Expression::Integer(1103))];
 
         match p.parse_program() {
             Ok(_) => panic!("error"),
