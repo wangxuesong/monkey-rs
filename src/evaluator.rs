@@ -62,6 +62,18 @@ fn eval_infix_expression(exp: &InfixExpression) -> EvalResult {
                 message: "eval infix expression".to_string(),
             }),
         },
+        Token::Asterisk => match (left, right) {
+            (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l * r)),
+            _ => Err(EvalError {
+                message: "eval infix expression".to_string(),
+            }),
+        },
+        Token::Slash => match (left, right) {
+            (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l / r)),
+            _ => Err(EvalError {
+                message: "eval infix expression".to_string(),
+            }),
+        },
         _ => Err(EvalError {
             message: "eval infix expression".to_string(),
         }),
@@ -95,6 +107,7 @@ mod test {
             ("-1103;", -1103),
             ("2206-1103;", 1103),
             ("1103-1103+1103;", 1103),
+            ("-1103+1103*2;", 1103),
         ];
 
         for t in test {

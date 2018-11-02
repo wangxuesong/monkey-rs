@@ -28,6 +28,7 @@ impl Precedence {
     fn token_precedence(tok: &Token) -> Precedence {
         match tok {
             Token::Plus | Token::Minus => Precedence::Sum,
+            Token::Asterisk | Token::Slash => Precedence::Product,
             _ => Precedence::Lowest,
         }
     }
@@ -262,6 +263,29 @@ mod tests {
                     left: Expression::Infix(Box::new(InfixExpression {
                         left: Expression::Integer(1103),
                         operator: token::Token::Minus,
+                        right: Expression::Integer(1103),
+                    })),
+                })),
+            ),
+            (
+                "1103*2;",
+                Expression::Infix(Box::new(InfixExpression {
+                    operator: token::Token::Asterisk,
+                    left: Expression::Integer(1103),
+                    right: Expression::Integer(2),
+                })),
+            ),
+            (
+                "-1103-1103*1103;",
+                Expression::Infix(Box::new(InfixExpression {
+                    operator: token::Token::Minus,
+                    left: Expression::Prefix(Box::new(PrefixExpression {
+                        operator: token::Token::Minus,
+                        right: Expression::Integer(1103),
+                    })),
+                    right: Expression::Infix(Box::new(InfixExpression {
+                        left: Expression::Integer(1103),
+                        operator: token::Token::Asterisk,
                         right: Expression::Integer(1103),
                     })),
                 })),

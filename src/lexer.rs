@@ -21,6 +21,8 @@ impl<'a> Lexer<'a> {
             Some('=') => Token::Assign,
             Some('+') => Token::Plus,
             Some('-') => Token::Minus,
+            Some('*') => Token::Asterisk,
+            Some('/') => Token::Slash,
             Some('(') => Token::Lparen,
             Some(')') => Token::Rparen,
             Some('{') => Token::Lbrace,
