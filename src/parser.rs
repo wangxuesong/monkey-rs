@@ -47,6 +47,13 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn infix_fn(&mut self) -> Option<InfixFunc> {
+        match self.cur_token {
+            Token::Minus => Some(Parser::parse_infix_expression),
+            _ => None,
+        }
+    }
+
     pub fn parse_program(&mut self) -> ParseResult<Program> {
         let mut p = Program::new();
 
@@ -98,7 +105,15 @@ impl<'a> Parser<'a> {
         }
 
         while self.cur_token != Token::Semicolon {
+            println!("zzzz {:?} {:?}", self.cur_token, self.peek_token);
             self.next_token();
+            match self.infix_fn() {
+                Some(f) => {
+                    println!("xxxx {:?} {:?}", self.cur_token, self.peek_token);
+                    left = f(self, left)?;
+                }
+                None => return Ok(left),
+            }
         }
         Ok(left)
     }
@@ -109,6 +124,17 @@ impl<'a> Parser<'a> {
         let right = parser.parse_expression()?;
         Ok(Expression::Prefix(Box::new(PrefixExpression {
             operator,
+            right,
+        })))
+    }
+
+    fn parse_infix_expression(parser: &mut Parser, left: Expression) -> ParseResult<Expression> {
+        let operator = parser.cur_token.clone();
+        parser.next_token();
+        let right = parser.parse_expression()?;
+        Ok(Expression::Infix(Box::new(InfixExpression {
+            operator,
+            left,
             right,
         })))
     }
@@ -191,6 +217,14 @@ mod tests {
                 "-1103;",
                 Expression::Prefix(Box::new(PrefixExpression {
                     operator: token::Token::Minus,
+                    right: Expression::Integer(1103),
+                })),
+            ),
+            (
+                "2206-1103;",
+                Expression::Infix(Box::new(InfixExpression {
+                    operator: token::Token::Minus,
+                    left: Expression::Integer(2206),
                     right: Expression::Integer(1103),
                 })),
             ),

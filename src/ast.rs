@@ -61,7 +61,11 @@ impl fmt::Display for ExpressionStatement {
 // Expression
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct InfixExpression {}
+pub struct InfixExpression {
+    pub operator: token::Token,
+    pub left: Expression,
+    pub right: Expression,
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PrefixExpression {

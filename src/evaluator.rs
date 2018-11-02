@@ -48,7 +48,24 @@ fn eval_expression(exp: &Expression) -> EvalResult {
                     }),
                 },
                 _ => Err(EvalError {
-                    message: "eval expression".to_string(),
+                    message: "eval prefix expression".to_string(),
+                }),
+            }
+        }
+        Expression::Infix(expr) => {
+            let left = eval_expression(&expr.left)?;
+            let right = eval_expression(&expr.right)?;
+            match expr.operator {
+                Token::Minus => {
+                    match (left, right) {
+                        (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l - r)),
+                        _ => Err(EvalError {
+                            message: "eval infix expression".to_string(),
+                        }),
+                    }
+                },
+                _ => Err(EvalError {
+                    message: "eval infix expression".to_string(),
                 }),
             }
         }
@@ -71,7 +88,7 @@ mod test {
 
     #[test]
     fn eval_integer_expression() {
-        let test = vec![("1103;", 1103), ("-1103;", -1103)];
+        let test = vec![("1103;", 1103), ("-1103;", -1103), ("2206-1103;", 1103)];
 
         for t in test {
             let obj = match parser::parse(t.0) {
