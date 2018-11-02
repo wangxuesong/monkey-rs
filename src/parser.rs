@@ -7,6 +7,32 @@ pub type ParseResult<T> = Result<T, ParseError>;
 type PrefixFunc = fn(parser: &mut Parser) -> ParseResult<Expression>;
 type InfixFunc = fn(parser: &mut Parser, left: Expression) -> ParseResult<Expression>;
 
+#[derive(Eq, PartialEq, Debug, Ord, PartialOrd)]
+enum Precedence {
+    Lowest,
+    // ==
+    Equals,
+    // > <
+    LessGreater,
+    // + -
+    Sum,
+    // * /
+    Product,
+    // -
+    Prefix,
+    // function
+    Call,
+}
+
+impl Precedence {
+    fn token_precedence(tok: &Token) -> Precedence {
+        match tok {
+            Token::Plus | Token::Minus => Precedence::Sum,
+            _ => Precedence::Lowest,
+        }
+    }
+}
+
 pub struct Parser<'a> {
     l: Lexer<'a>,
 
@@ -49,7 +75,9 @@ impl<'a> Parser<'a> {
 
     fn infix_fn(&mut self) -> Option<InfixFunc> {
         match self.cur_token {
-            Token::Minus => Some(Parser::parse_infix_expression),
+            Token::Minus | Token::Plus | Token::Asterisk | Token::Slash => {
+                Some(Parser::parse_infix_expression)
+            }
             _ => None,
         }
     }
@@ -78,7 +106,7 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::Assign);
 
         self.next_token();
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(&Precedence::Lowest)?;
 
         self.expect_token(Token::Semicolon);
 
@@ -86,7 +114,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
-        let expr = self.parse_expression()?;
+        let expr = self.parse_expression(&Precedence::Lowest)?;
 
         self.expect_token(Token::Semicolon);
 
@@ -95,7 +123,7 @@ impl<'a> Parser<'a> {
         })))
     }
 
-    fn parse_expression(&mut self) -> ParseResult<Expression> {
+    fn parse_expression(&mut self, precedence: &Precedence) -> ParseResult<Expression> {
         let mut left;
 
         if let Some(f) = self.prefix_fn() {
@@ -104,12 +132,12 @@ impl<'a> Parser<'a> {
             return Err(format!("invalid token {:?}", self.cur_token));
         }
 
-        while self.cur_token != Token::Semicolon {
-            println!("zzzz {:?} {:?}", self.cur_token, self.peek_token);
+        while self.cur_token != Token::Semicolon
+            && *precedence < Precedence::token_precedence(&self.peek_token)
+            {
             self.next_token();
             match self.infix_fn() {
                 Some(f) => {
-                    println!("xxxx {:?} {:?}", self.cur_token, self.peek_token);
                     left = f(self, left)?;
                 }
                 None => return Ok(left),
@@ -121,7 +149,7 @@ impl<'a> Parser<'a> {
     fn parse_prefix_expression(parser: &mut Parser) -> ParseResult<Expression> {
         let operator = parser.cur_token.clone();
         parser.next_token();
-        let right = parser.parse_expression()?;
+        let right = parser.parse_expression(&Precedence::token_precedence(&operator))?;
         Ok(Expression::Prefix(Box::new(PrefixExpression {
             operator,
             right,
@@ -131,7 +159,7 @@ impl<'a> Parser<'a> {
     fn parse_infix_expression(parser: &mut Parser, left: Expression) -> ParseResult<Expression> {
         let operator = parser.cur_token.clone();
         parser.next_token();
-        let right = parser.parse_expression()?;
+        let right = parser.parse_expression(&Precedence::token_precedence(&operator))?;
         Ok(Expression::Infix(Box::new(InfixExpression {
             operator,
             left,
@@ -163,6 +191,7 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use ast::*;
     use lexer::Lexer;
     use parser::*;
     use token;
@@ -223,6 +252,18 @@ mod tests {
                     operator: token::Token::Minus,
                     left: Expression::Integer(2206),
                     right: Expression::Integer(1103),
+                })),
+            ),
+            (
+                "1103-1103+1103;",
+                Expression::Infix(Box::new(InfixExpression {
+                    operator: token::Token::Plus,
+                    right: Expression::Integer(1103),
+                    left: Expression::Infix(Box::new(InfixExpression {
+                        left: Expression::Integer(1103),
+                        operator: token::Token::Minus,
+                        right: Expression::Integer(1103),
+                    })),
                 })),
             ),
         ];

@@ -13,6 +13,8 @@ pub enum Token {
     Assign,
     Plus,
     Minus,
+    Asterisk,
+    Slash,
 
     // 分隔符
     Comma,

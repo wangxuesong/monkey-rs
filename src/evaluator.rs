@@ -39,23 +39,31 @@ fn eval_expression(exp: &Expression) -> EvalResult {
     match exp {
         Expression::Integer(i) => Ok(Object::Int(*i)),
         Expression::Prefix(expr) => eval_prefix_expression(expr),
-        Expression::Infix(expr) => {
-            let left = eval_expression(&expr.left)?;
-            let right = eval_expression(&expr.right)?;
-            match expr.operator {
-                Token::Minus => match (left, right) {
-                    (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l - r)),
-                    _ => Err(EvalError {
-                        message: "eval infix expression".to_string(),
-                    }),
-                },
-                _ => Err(EvalError {
-                    message: "eval infix expression".to_string(),
-                }),
-            }
-        }
+        Expression::Infix(expr) => eval_infix_expression(expr),
         _ => Err(EvalError {
             message: "eval expression".to_string(),
+        }),
+    }
+}
+
+fn eval_infix_expression(exp: &InfixExpression) -> EvalResult {
+    let left = eval_expression(&exp.left)?;
+    let right = eval_expression(&exp.right)?;
+    match exp.operator {
+        Token::Minus => match (left, right) {
+            (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l - r)),
+            _ => Err(EvalError {
+                message: "eval infix expression".to_string(),
+            }),
+        },
+        Token::Plus => match (left, right) {
+            (Object::Int(l), Object::Int(r)) => Ok(Object::Int(l + r)),
+            _ => Err(EvalError {
+                message: "eval infix expression".to_string(),
+            }),
+        },
+        _ => Err(EvalError {
+            message: "eval infix expression".to_string(),
         }),
     }
 }
@@ -82,7 +90,12 @@ mod test {
 
     #[test]
     fn eval_integer_expression() {
-        let test = vec![("1103;", 1103), ("-1103;", -1103), ("2206-1103;", 1103)];
+        let test = vec![
+            ("1103;", 1103),
+            ("-1103;", -1103),
+            ("2206-1103;", 1103),
+            ("1103-1103+1103;", 1103),
+        ];
 
         for t in test {
             let obj = match parser::parse(t.0) {
