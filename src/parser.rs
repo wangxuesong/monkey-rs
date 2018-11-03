@@ -70,6 +70,7 @@ impl<'a> Parser<'a> {
         match self.cur_token {
             Token::Int(_) => Some(Parser::parse_integer_literal),
             Token::Minus => Some(Parser::parse_prefix_expression),
+            Token::Lparen => Some(Parser::parse_group_expression),
             _ => None,
         }
     }
@@ -157,6 +158,17 @@ impl<'a> Parser<'a> {
         })))
     }
 
+    fn parse_group_expression(parser: &mut Parser) -> ParseResult<Expression> {
+        parser.next_token();
+        let right = parser.parse_expression(&Precedence::Lowest)?;
+        println!("zzz {} {}", parser.cur_token, parser.peek_token);
+        if parser.peek_token != Token::Rparen {
+            return Err(format!("unexpected token {}", parser.peek_token))
+        }
+        parser.next_token();
+        Ok(right)
+    }
+
     fn parse_infix_expression(parser: &mut Parser, left: Expression) -> ParseResult<Expression> {
         let operator = parser.cur_token.clone();
         parser.next_token();
@@ -175,10 +187,11 @@ impl<'a> Parser<'a> {
         Err(format!("invalid token {}", parser.cur_token))
     }
 
-    fn expect_token(&mut self, tok: Token) {
+    fn expect_token(&mut self, tok: Token) -> ParseResult<()> {
         if tok == self.peek_token {
             self.next_token();
         };
+        Err(format!("unexpected token {}", self.peek_token))
     }
 
     fn expect_ident(&mut self) -> ParseResult<String> {
@@ -286,6 +299,18 @@ mod tests {
                     right: Expression::Infix(Box::new(InfixExpression {
                         left: Expression::Integer(1103),
                         operator: token::Token::Asterisk,
+                        right: Expression::Integer(1103),
+                    })),
+                })),
+            ),
+            (
+                "1103-(1103+1103);",
+                Expression::Infix(Box::new(InfixExpression {
+                    operator: token::Token::Minus,
+                    left: Expression::Integer(1103),
+                    right: Expression::Infix(Box::new(InfixExpression {
+                        left: Expression::Integer(1103),
+                        operator: token::Token::Plus,
                         right: Expression::Integer(1103),
                     })),
                 })),
