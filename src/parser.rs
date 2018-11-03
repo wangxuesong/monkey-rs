@@ -103,14 +103,14 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_let_statement(&mut self) -> ParseResult<Statement> {
+        self.next_token(); // skip let
         let name = self.expect_ident()?;
 
-        self.expect_token(Token::Assign);
+        self.expect_token(Token::Assign)?;
 
-        self.next_token();
         let value = self.parse_expression(&Precedence::Lowest)?;
 
-        self.expect_token(Token::Semicolon);
+        self.expect_token(Token::Semicolon)?;
 
         Ok(Statement::Let(Box::new(LetStatement { name, value })))
     }
@@ -118,7 +118,7 @@ impl<'a> Parser<'a> {
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
         let expr = self.parse_expression(&Precedence::Lowest)?;
 
-        self.expect_token(Token::Semicolon);
+        self.expect_token(Token::Semicolon)?;
 
         Ok(Statement::Expression(Box::new(ExpressionStatement {
             expression: expr,
@@ -135,9 +135,8 @@ impl<'a> Parser<'a> {
         }
 
         while self.cur_token != Token::Semicolon
-            && *precedence < Precedence::token_precedence(&self.peek_token)
+            && *precedence < Precedence::token_precedence(&self.cur_token)
             {
-            self.next_token();
             match self.infix_fn() {
                 Some(f) => {
                     left = f(self, left)?;
@@ -151,6 +150,7 @@ impl<'a> Parser<'a> {
     fn parse_prefix_expression(parser: &mut Parser) -> ParseResult<Expression> {
         let operator = parser.cur_token.clone();
         parser.next_token();
+
         let right = parser.parse_expression(&Precedence::token_precedence(&operator))?;
         Ok(Expression::Prefix(Box::new(PrefixExpression {
             operator,
@@ -159,19 +159,16 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_group_expression(parser: &mut Parser) -> ParseResult<Expression> {
-        parser.next_token();
+        parser.next_token(); // Skip Lparen
         let right = parser.parse_expression(&Precedence::Lowest)?;
-        println!("zzz {} {}", parser.cur_token, parser.peek_token);
-        if parser.peek_token != Token::Rparen {
-            return Err(format!("unexpected token {}", parser.peek_token))
-        }
-        parser.next_token();
+        parser.expect_token(Token::Rparen)?;
         Ok(right)
     }
 
     fn parse_infix_expression(parser: &mut Parser, left: Expression) -> ParseResult<Expression> {
         let operator = parser.cur_token.clone();
         parser.next_token();
+
         let right = parser.parse_expression(&Precedence::token_precedence(&operator))?;
         Ok(Expression::Infix(Box::new(InfixExpression {
             operator,
@@ -182,21 +179,31 @@ impl<'a> Parser<'a> {
 
     fn parse_integer_literal(parser: &mut Parser) -> ParseResult<Expression> {
         if let Token::Int(value) = parser.cur_token {
+            parser.next_token();
             return Ok(Expression::Integer(value));
         };
         Err(format!("invalid token {}", parser.cur_token))
     }
 
     fn expect_token(&mut self, tok: Token) -> ParseResult<()> {
+        if tok == self.cur_token {
+            self.next_token();
+            return Ok(());
+        };
+        Err(format!("expect token {} but {}", tok, self.cur_token))
+    }
+
+    fn expect_peek(&mut self, tok: Token) -> ParseResult<()> {
         if tok == self.peek_token {
             self.next_token();
+            return Ok(());
         };
-        Err(format!("unexpected token {}", self.peek_token))
+        Err(format!("expect token {} but {}", tok, self.peek_token))
     }
 
     fn expect_ident(&mut self) -> ParseResult<String> {
-        self.next_token();
         if let Token::Ident(name) = self.cur_token.clone() {
+            self.next_token();
             return Ok(name);
         }
         Err(format!("invalid identifier {}", self.cur_token))
@@ -319,7 +326,7 @@ mod tests {
 
         for e in expects {
             let mut p = setup(e.0);
-            let program = p.parse_program().unwrap();
+            let program = p.parse_program().expect(e.0);
             let mut iter = program.statements.iter();
 
             match iter.next().unwrap() {
